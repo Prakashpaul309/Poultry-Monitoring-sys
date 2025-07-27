@@ -12,3 +12,4 @@ if (typeof module !== 'undefined' && module.exports) {
 } else {
     window.CONFIG = CONFIG;
 }
+
