@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>Poultry Farm Monitor</title>
+<!-- Move Leaflet CSS before other styles -->
+<link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet"/>
+<link href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" rel="stylesheet"/>
+<link href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" rel="stylesheet"/>
+<!-- Add Leaflet.draw CSS -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" rel="stylesheet"/>
+<!-- Other CSS -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet"/>
+<link href="styles.css" rel="stylesheet"/>
+<!-- Move Leaflet JS after CSS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+<!-- Add Leaflet.draw JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+
+<link href="map.css" rel="stylesheet"/></head>
+<link rel="stylesheet" href="styles.css">
+<body>
+<!-- Sidebar -->
+<div class="sidebar">
+<div class="brand">
+<h2>Poultry Monitor </h2>
+</div>
+<ul class="nav-menu">
+<li class="nav-item active" onclick="switchTab('overview')">
+<i class="fas fa-home"></i>
+        Homie
+      </li>
+<li class="nav-item" onclick="switchTab('map')">
+<i class="fas fa-map-marked-alt"></i>
+        Map View
+      </li>
+<li class="nav-item" onclick="switchTab('analytics')">
+<i class="fas fa-history"></i>
+        History
+      </li>
+<li class="nav-item" onclick="switchTab('alerts')">
+<i class="fas fa-bell"></i>
+        Alerts
+      </li>
+<li class="nav-item" onclick="switchTab('farmOwner')">
+<i class="fas fa-user"></i>
+        Farm Owner Info
+      </li>
+<li class="nav-item" onclick="switchTab('settings')">
+<i class="fas fa-cog"></i>
+        Settings
+      </li>
+<li class="nav-item" onclick="logout()" ontouchend="logout()" role="button" tabindex="0">
+<i class="fas fa-sign-out-alt"></i>
+        Logout
+      </li>
+</ul>
+</div>
+<!-- Main Content -->
+<div class="main-content">
+<div class="header">
+<div class="header-title">
+<h1>Dashboard</h1>
+</div>
+<div class="last-updated">
+        Last updated: Just now
+    </div>
+</div>
+<div class="tabs">
+<span class="tab active" onclick="switchTab('overview')">Overview</span>
+<span class="tab" onclick="switchTab('map')">Map View</span>
+<span class="tab" onclick="switchTab('analytics')">Analytics</span>
+<span class="tab" onclick="switchTab('alerts')">Alerts</span>
+<span class="tab" onclick="switchTab('farmOwner')">Farm Owner Info</span>
+<span class="tab" onclick="switchTab('farmDetails')" id="farmDetailsTab" style="display: none;">Farm Details</span>
+<span class="tab" onclick="switchTab('settings')">Settings</span>
+</div>
+<div class="error" id="error" style="display: none;"></div>
+<!-- Overview Tab Content -->
+<div class="tab-content active" id="overviewTab">
+<div class="metrics-grid" id="data">
+<!-- Metrics will be populated here -->
+</div>
+<div class="alerts-section">
+<div class="alerts-header">
+<h3>Recent Alerts</h3>
+</div>
+<div id="alerts">
+<!-- Alerts will be populated here -->
+</div>
+</div>
+<div class="farm-status">
+<div class="status-header">
+<h3>Farm Status</h3>
+</div>
+<div class="status-grid">
+<div class="status-item">
+<span>Overall Condition</span>
+<span class="status-badge normal" id="overallStatus">Good</span>
+</div>
+<div class="status-item clickable" onclick="showDetailedAlerts()">
+<span>Active Alerts</span>
+<span class="status-badge warning" id="activeAlerts">0 Warning</span>
+</div>
+<div class="status-item">
+<span>Sensor Status</span>
+<span class="status-badge normal">All Online</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Map Tab Content -->
+<div class="tab-content" id="mapTab">
+<div class="map-wrapper">
+<button class="search-toggle" onclick="toggleSearch()">
+<i class="fas fa-chevron-up"></i>
+          Search Options
+        </button>
+<div class="search-container">
+<div class="search-box">
+<label>Start Location:</label>
+<form class="search-form">
+<input enterkeyhint="search" id="startLocation" placeholder="Enter starting point..." type="search"/>
+</form>
+</div>
+<div class="search-box">
+<label>Destination:</label>
+<form class="search-form">
+<input enterkeyhint="search" id="destLocation" placeholder="Enter destination..." type="search"/>
+</form>
+</div>
+</div>
+<!-- Add coordinates panel -->
+<div class="coordinates-panel" id="coordinatesPanel" style="display: none;">
+<div class="coordinates-header">
+<h4>Shape Coordinates</h4>
+<button class="copy-btn" onclick="copyCoordinates()">
+<i class="fas fa-copy"></i> Copy
+            </button>
+<button class="close-btn" onclick="hideCoordinatesPanel()">
+<i class="fas fa-times"></i>
+</button>
+</div>
+<div class="coordinates-content">
+<pre id="coordinatesDisplay"></pre>
+</div>
+</div>
+<div id="map"></div>
+</div>
+</div>
+<!-- Analytics Tab Content -->
+<div class="tab-content" id="analyticsTab">
+<div class="analytics-header">
+<h3>Farm Analytics</h3>
+<div class="time-filter">
+<select id="timeRange" onchange="updateAnalytics()">
+<option value="24h">Last 24 Hours</option>
+<option value="7d">Last 7 Days</option>
+<option value="30d">Last 30 Days</option>
+</select>
+</div>
+</div>
+<div class="analytics-grid">
+<div class="chart-card">
+<h4>Temperature Trends</h4>
+<canvas id="temperatureChart"></canvas>
+</div>
+<div class="chart-card">
+<h4>Humidity Trends</h4>
+<canvas id="humidityChart"></canvas>
+</div>
+<div class="chart-card">
+<h4>Ammonia Levels</h4>
+<canvas id="ammoniaChart"></canvas>
+</div>
+<div class="chart-card">
+<h4>pH Levels</h4>
+<canvas id="phChart"></canvas>
+</div>
+</div>
+<div class="analytics-summary">
+<div class="summary-card">
+<h4>Temperature Statistics</h4>
+<div class="stats-grid" id="tempStats">
+<!-- Temperature stats will be populated here -->
+</div>
+</div>
+<div class="summary-card">
+<h4>Alert Analysis</h4>
+<div class="stats-grid" id="alertStats">
+<!-- Alert stats will be populated here -->
+</div>
+</div>
+</div>
+</div>
+<!-- Alerts Tab Content -->
+<div class="tab-content" id="alertsTab">
+<div class="alerts-history">
+<h3>Alerts History</h3>
+<div id="alertsHistory">
+<!-- Alerts history will be populated here -->
+</div>
+</div>
+</div>
+<!-- Farm Owner Info Tab Content -->
+<div class="tab-content" id="farmOwnerTab">
+<div class="owner-info-container">
+<div class="profile-section">
+<div class="profile-header">
+<h3>Personal Information</h3>
+<button class="edit-btn" onclick="toggleEditMode('personal')">
+<i class="fas fa-edit"></i> Edit
+            </button>
+</div>
+<div class="profile-content">
+<div class="profile-details">
+<form id="personalInfoForm">
+<div class="form-group">
+<label>Owner's Name</label>
+<input disabled="" id="ownerName" placeholder="Enter owner's name" type="text"/>
+</div>
+<div class="form-group">
+<label>Aadhaar Number</label>
+<div class="aadhaar-input">
+<input disabled="" id="aadhaarNumber" maxlength="14" placeholder="XXXX-XXXX-XXXX" type="text"/>
+<button class="verify-btn" disabled="" onclick="verifyAadhaar()">
+<i class="fas fa-check-circle"></i> Verify
+                    </button>
+</div>
+</div>
+<div class="form-group">
+<label>Contact Number</label>
+<input disabled="" id="contactNumber" placeholder="Enter contact number" type="tel"/>
+</div>
+<div class="form-group">
+<label>Email</label>
+<input disabled="" id="email" placeholder="Enter email address" type="email"/>
+</div>
+<div class="form-actions">
+<button class="save-btn" disabled="" onclick="savePersonalInfo()" type="button">
+                    Save Changes
+                  </button>
+</div>
+</form>
+</div>
+</div>
+</div>
+<div class="farms-section">
+<div class="farms-header">
+<h3>Farm Management</h3>
+<button class="add-farm-btn" onclick="showAddFarmModal()">
+<i class="fas fa-plus"></i> Add New Farm
+            </button>
+</div>
+<div class="farms-list" id="farmsList">
+<!-- Farms will be listed here -->
+</div>
+</div>
+</div>
+</div>
+<!-- Farm Details Tab Content -->
+<div class="tab-content" id="farmDetailsTab">
+<div class="farm-details-container">
+<div class="farm-header">
+<h2 id="farmDetailsName"></h2>
+<div class="farm-id">Farm ID: <span id="farmDetailsId"></span></div>
+</div>
+
+<div class="farm-info-grid">
+<!-- Basic Farm Information -->
+<div class="farm-info-card">
+<h3><i class="fas fa-info-circle"></i> Basic Information</h3>
+<div class="info-content">
+<div class="info-row">
+<label>Location:</label>
+<span id="farmLocation"></span>
+</div>
+<div class="info-row">
+<label>Coordinates:</label>
+<span id="farmCoordinates"></span>
+</div>
+<div class="info-row">
+<label>Farm Type:</label>
+<span id="farmType"></span>
+</div>
+<div class="info-row">
+<label>Farm Size:</label>
+<span id="farmSize"></span>
+</div>
+<div class="info-row">
+<label>Number of Birds:</label>
+<span id="birdCount"></span>
+</div>
+<div class="info-row">
+<label>NAAP Registration:</label>
+<span id="naapNumber"></span>
+</div>
+</div>
+</div>
+
+<!-- Farm Owner Information -->
+<div class="farm-info-card">
+<h3><i class="fas fa-user"></i> Owner Information</h3>
+<div class="info-content">
+<div class="info-row">
+<label>Owner Name:</label>
+<span id="ownerNameDisplay"></span>
+</div>
+<div class="info-row">
+<label>Contact Number:</label>
+<span id="ownerContact"></span>
+</div>
+<div class="info-row">
+<label>Email:</label>
+<span id="ownerEmail"></span>
+</div>
+<div class="info-row">
+<label>Aadhaar Number:</label>
+<span id="ownerAadhaar"></span>
+</div>
+</div>
+</div>
+
+<!-- Current Sensor Data -->
+<div class="farm-info-card">
+<h3><i class="fas fa-microchip"></i> Current Sensor Data</h3>
+<div id="currentSensorData" class="sensor-grid"></div>
+</div>
+
+<!-- Performance Metrics -->
+<div class="farm-info-card">
+<h3><i class="fas fa-chart-line"></i> Performance Metrics</h3>
+<div id="performanceMetrics"></div>
+</div>
+</div>
+
+<!-- Historical Data Charts -->
+<div class="farm-history">
+<h3><i class="fas fa-history"></i> Sensor History</h3>
+<div class="sensor-charts-grid">
+<div class="chart-container">
+<h4>Temperature Trends</h4>
+<canvas id="farmTempChart"></canvas>
+</div>
+<div class="chart-container">
+<h4>Humidity Trends</h4>
+<canvas id="farmHumidityChart"></canvas>
+</div>
+<div class="chart-container">
+<h4>Ammonia Levels</h4>
+<canvas id="farmAmmoniaChart"></canvas>
+</div>
+<div class="chart-container">
+<h4>pH Levels</h4>
+<canvas id="farmPhChart"></canvas>
+</div>
+</div>
+</div>
+
+<!-- Recent Alerts -->
+<div class="farm-alerts">
+<h3><i class="fas fa-exclamation-triangle"></i> Recent Alerts</h3>
+<div id="farmAlerts"></div>
+</div>
+</div>
+</div>
+
+<!-- Settings Tab Content -->
+<div class="tab-content" id="settingsTab">
+<div class="settings-container">
+<div class="settings-section">
+<div class="settings-header">
+<h3>Account Settings</h3>
+</div>
+<div class="settings-content">
+<div class="settings-group">
+<h4>Security</h4>
+<button class="settings-btn" onclick="openChangePasswordModal()">
+<i class="fas fa-key"></i>
+                Change Password
+              </button>
+</div>
+<div class="settings-group">
+<h4>Notifications</h4>
+<div class="settings-item">
+<label class="toggle-switch">
+<input id="emailNotifications" onchange="updateNotificationSettings()" type="checkbox"/>
+<span class="toggle-slider"></span>
+</label>
+<span>Email Notifications</span>
+</div>
+<div class="settings-item">
+<label class="toggle-switch">
+<input id="smsNotifications" onchange="updateNotificationSettings()" type="checkbox"/>
+<span class="toggle-slider"></span>
+</label>
+<span>SMS Notifications</span>
+</div>
+</div>
+<div class="settings-group">
+<h4>Alert Thresholds</h4>
+<div class="threshold-item">
+<label>Temperature Warning Threshold (°C)</label>
+<input id="tempThreshold" onchange="updateThresholds()" type="number" value="35"/>
+</div>
+<div class="threshold-item">
+<label>Humidity Warning Threshold (%)</label>
+<input id="humidityThreshold" onchange="updateThresholds()" type="number" value="70"/>
+</div>
+<div class="threshold-item">
+<label>Ammonia Warning Threshold (ppm)</label>
+<input id="ammoniaThreshold" onchange="updateThresholds()" type="number" value="40"/>
+</div>
+<div class="threshold-item">
+<label>pH Warning Threshold</label>
+<input id="phThreshold" onchange="updateThresholds()" type="number" value="8"/>
+</div>
+</div>
+<div class="settings-group">
+<h4>Data Refresh Rate</h4>
+<select id="refreshRate" onchange="updateRefreshRate()">
+<option value="5000">5 seconds</option>
+<option value="10000">10 seconds</option>
+<option value="30000">30 seconds</option>
+<option value="60000">1 minute</option>
+</select>
+</div>
+<div class="settings-group">
+<h4>Display Settings</h4>
+<div class="settings-item">
+<label class="toggle-switch">
+<input id="darkMode" onchange="toggleDarkMode()" type="checkbox"/>
+<span class="toggle-slider"></span>
+</label>
+<span>Dark Mode</span>
+</div>
+<div class="settings-item">
+<label>Temperature Unit</label>
+<select id="tempUnit" onchange="updateTempUnit()">
+<option value="celsius">Celsius (°C)</option>
+<option value="fahrenheit">Fahrenheit (°F)</option>
+</select>
+</div>
+</div>
+</div>
+</div>
+<div class="settings-section">
+<div class="settings-header">
+<h3>System Information</h3>
+</div>
+<div class="settings-content">
+<div class="info-item">
+<span>Version:</span>
+<span>1.0.0</span>
+</div>
+<div class="info-item">
+<span>Last Updated:</span>
+<span id="lastUpdated"></span>
+</div>
+<div class="info-item">
+<span>Connected Sensors:</span>
+<span id="sensorCount">4</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Add/Edit Farm Modal -->
+<div class="modal" id="farmModal">
+<div class="modal-content">
+<span class="close-modal" onclick="closeFarmModal()">×</span>
+<h3>Farm Details</h3>
+<form id="farmForm">
+<div class="form-group">
+<label>Farm Name</label>
+<input id="farmName" placeholder="Enter farm name" type="text"/>
+</div>
+<div class="form-group">
+<label>Location</label>
+<input id="farmLocation" placeholder="Enter farm location" type="text"/>
+</div>
+<div class="form-group">
+<label>Farm Size (in acres)</label>
+<input id="farmSize" placeholder="Enter farm size" type="number"/>
+</div>
+<div class="form-group">
+<label>NAAP Registration Number</label>
+<div class="naap-input">
+<input id="naapNumber" placeholder="Enter NAAP registration number" type="text"/>
+<button class="verify-btn" onclick="verifyNAAP()" type="button">
+<i class="fas fa-check-circle"></i> Verify
+              </button>
+</div>
+</div>
+<div class="form-group">
+<label>Farm Type</label>
+<select id="farmType">
+<option value="">Select farm type</option>
+<option value="broiler">Broiler Farm</option>
+<option value="layer">Layer Farm</option>
+<option value="breeder">Breeder Farm</option>
+</select>
+</div>
+<div class="form-group">
+<label>Number of Birds</label>
+<input id="birdCount" placeholder="Enter number of birds" type="number"/>
+</div>
+<button class="save-btn" onclick="saveFarm()" type="button">Save Farm</button>
+</form>
+</div>
+</div>
+</div>
+<!-- Detailed Alerts Modal -->
+<div class="modal" id="alertsModal">
+<div class="modal-content">
+<span class="close-modal" onclick="closeAlertsModal()">×</span>
+<h3>Active Alerts</h3>
+<div class="detailed-alerts" id="detailedAlerts">
+<!-- Detailed alerts will be populated here -->
+</div>
+</div>
+</div>
+<!-- Change Password Modal -->
+<div class="modal" id="changePasswordModal">
+<div class="modal-content">
+<span class="close-modal" onclick="closeChangePasswordModal()">×</span>
+<!-- Step 1: Request OTP -->
+<div class="modal-step active" id="step1">
+<h3>Change Password</h3>
+<p>We'll send an OTP to your email for verification.</p>
+<button onclick="requestOTP()">Send OTP</button>
+<div class="modal-message" id="step1Message"></div>
+</div>
+<!-- Step 2: Verify OTP -->
+<div class="modal-step" id="step2">
+<h3>Enter OTP</h3>
+<input id="otpInput" maxlength="6" placeholder="Enter OTP" type="text"/>
+<button onclick="verifyOTP()">Verify OTP</button>
+<div class="modal-message" id="step2Message"></div>
+</div>
+<!-- Step 3: Change Password -->
+<div class="modal-step" id="step3">
+<h3>Set New Password</h3>
+<input id="newPassword" placeholder="New Password" type="password"/>
+<input id="confirmPassword" placeholder="Confirm New Password" type="password"/>
+<button onclick="changePassword()">Update Password</button>
+<div class="modal-message" id="step3Message"></div>
+</div>
+</div>
+</div>
+
+<script src="config.js"></script>
+<script src="dashboard.js"></script></body>
+</html>
+
+

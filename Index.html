@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login - Sensor Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f5f5f5;
+    }
+    .login-container {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+    }
+    h2 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 1.5rem;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    #loginBtn {
+      background-color: #4CAF50;
+      color: white;
+    }
+    #signupBtn {
+      background-color: #2196F3;
+      color: white;
+    }
+    #message {
+      text-align: center;
+      margin-top: 1rem;
+      color: #666;
+    }
+    .error {
+      color: #f44336;
+    }
+    .success {
+      color: #4CAF50;
+    }
+    .loading {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+    /* Telegram Modal Styles */
+    .telegram-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .telegram-modal-content {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+    }
+    .telegram-modal h3 {
+      margin-top: 0;
+      color: #333;
+      font-size: 1.5rem;
+    }
+    .telegram-modal p {
+      color: #666;
+      margin: 1rem 0;
+    }
+    .telegram-modal .buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .telegram-modal button {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .telegram-modal .link-btn {
+      background-color: #2AABEE;
+      color: white;
+    }
+    .telegram-modal .skip-btn {
+      background-color: #e0e0e0;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h2>Login Page</h2>
+    <form id="authForm" onsubmit="return false;">
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="password" id="password" placeholder="Password" required>
+      <button id="loginBtn" onclick="signIn()">Login</button>
+      <button id="signupBtn" onclick="signUp()">Sign Up</button>
+    </form>
+    <p id="message"></p>
+  </div>
+
+  <!-- Telegram Linking Modal -->
+  <div class="telegram-modal" id="telegramModal">
+    <div class="telegram-modal-content">
+      <h3>🔗 Link Your Telegram</h3>
+      <p>Would you like to receive real-time farm alerts on Telegram?</p>
+      <div class="buttons">
+        <button class="link-btn" onclick="linkTelegram()">
+          ✅ Link Now
+        </button>
+        <button class="skip-btn" onclick="skipTelegram()">
+          ⏭️ Skip
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+   const SUPABASE_URL = CONFIG.SUPABASE_URL;
+   const SUPABASE_KEY = CONFIG.SUPABASE_ANON_KEY;
+
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Check if user is already logged in
+    window.onload = async function() {
+      // Check if this is a logout redirect
+      const urlParams = new URLSearchParams(window.location.search);
+      const isLogout = urlParams.get('logout') === 'true';
+      
+      if (isLogout) {
+        // Clear any remaining session data
+        localStorage.clear();
+        sessionStorage.clear();
+        await client.auth.setSession(null);
+        // Remove the logout parameter from URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+      }
+
+      const { data: { session }, error } = await client.auth.getSession();
+      if (session && !isLogout) {
+        window.location.href = 'dashboard.html';
+      }
+    };
+
+    function setLoading(isLoading) {
+      const buttons = document.querySelectorAll('button');
+      const inputs = document.querySelectorAll('input');
+      buttons.forEach(button => {
+        button.disabled = isLoading;
+        button.classList.toggle('loading', isLoading);
+      });
+      inputs.forEach(input => {
+        input.disabled = isLoading;
+      });
+    }
+
+    function showMessage(message, isError = false) {
+      const messageEl = document.getElementById('message');
+      messageEl.innerText = message;
+      messageEl.className = isError ? 'error' : 'success';
+    }
+
+    async function signUp() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      if (!email || !password) {
+        showMessage('Please fill in all fields', true);
+        return;
+      }
+
+      setLoading(true);
+      const { data, error } = await client.auth.signUp({ 
+        email, 
+        password,
+        options: {
+          emailRedirectTo: window.location.origin + '/login.html'
+        }
+      });
+      setLoading(false);
+
+      if (error) {
+        showMessage(error.message, true);
+      } else {
+        showMessage('Signup successful! Please check your email to verify your account.');
+      }
+    }
+
+    async function signIn() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      if (!email || !password) {
+        showMessage('Please fill in all fields', true);
+        return;
+      }
+
+      setLoading(true);
+      const { data, error } = await client.auth.signInWithPassword({ email, password });
+      setLoading(false);
+
+      if (error) {
+        showMessage(error.message, true);
+      } else {
+        showMessage('Login successful!');
+        // Show Telegram modal instead of immediate redirect
+        document.getElementById('telegramModal').style.display = 'flex';
+      }
+    }
+
+    function linkTelegram() {
+      const userEmail = encodeURIComponent(document.getElementById('email').value);
+      window.open(`https://t.me/myfarmalarmbot?start=${userEmail}`, '_blank');
+      redirectToDashboard();
+    }
+
+    function skipTelegram() {
+      redirectToDashboard();
+    }
+
+    function redirectToDashboard() {
+      document.getElementById('telegramModal').style.display = 'none';
+      window.location.href = 'dashboard.html';
+    }
+  </script>
+  <script src="config.js"></script>
+</body>
+</html>

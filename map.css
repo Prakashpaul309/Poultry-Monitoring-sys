@@ -1,0 +1,440 @@
+
+    /* Update map styles */
+    #mapTab {
+      height: calc(100vh - 150px);
+      padding: 20px;
+      background: #fff;
+    }
+    .map-wrapper {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+    .search-container {
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 70%;
+      max-width: 600px;
+      background: white;
+      padding: 12px 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      z-index: 1000;
+      display: flex;
+      gap: 20px;
+      transition: all 0.3s ease;
+      opacity: 1;
+      visibility: visible;
+    }
+    .search-container.hidden {
+      opacity: 0;
+      visibility: hidden;
+      transform: translate(-50%, -20px);
+    }
+    .search-box {
+      flex: 1;
+      min-width: 0; /* Prevent flex items from overflowing */
+    }
+    .search-box label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #333;
+      font-size: 13px;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .search-box input:focus {
+      outline: none;
+      border-color: #4CAF50;
+      box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+    }
+
+    /* Mobile-specific styles */
+    @media (max-width: 768px) {
+      .search-container {
+        width: 90%;
+        top: -8px;
+        padding: 10px;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .search-box input {
+        font-size: 14px;
+        padding: 8px;
+      }
+      .search-box label {
+        font-size: 12px;
+      }
+    }
+
+    #routeInfo {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+    }
+
+    #routeInfo i {
+      color: #0066FF;
+    }
+
+    .location-help-btn {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .location-help-btn:hover {
+      background: #0056b3;
+    }
+
+    .location-help-btn i {
+      font-size: 16px;
+    }
+
+    .search-form {
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    .search-form input[type="search"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .search-form input[type="search"]:focus {
+      outline: none;
+      border-color: #4CAF50;
+      box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+    }
+
+    @media (max-width: 768px) {
+      .search-form input[type="search"] {
+        font-size: 16px;
+        padding: 12px;
+      }
+    }
+
+    .location-error {
+      position: absolute;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px 20px;
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      z-index: 1000;
+      text-align: center;
+      max-width: 80%;
+      font-size: 14px;
+      color: #dc3545;
+    }
+
+    @media (max-width: 768px) {
+      .location-error {
+        top: 120px;
+        font-size: 12px;
+        padding: 8px 15px;
+      }
+    }
+
+    .sensor-value.warning {
+      color: #ffc107 !important;
+      font-weight: bold;
+    }
+    .sensor-value.critical {
+      color: #dc3545 !important;
+      font-weight: bold;
+    }
+
+    /* Add styles for draw controls */
+    .leaflet-draw-toolbar {
+      margin-top: 60px !important; /* Push below search box */
+    }
+    
+    .leaflet-draw-toolbar a {
+      background-color: white;
+      border: 1px solid rgba(0,0,0,0.2);
+      border-radius: 4px;
+      margin-bottom: 5px;
+    }
+
+    .leaflet-draw-toolbar a:hover {
+      background-color: #f8f9fa;
+    }
+
+    /* Mobile optimization for draw controls */
+    @media (max-width: 768px) {
+      .leaflet-draw-toolbar {
+        margin-top: 120px !important; /* More space on mobile */
+      }
+      
+      .leaflet-draw-toolbar a {
+        width: 30px;
+        height: 30px;
+        line-height: 30px;
+      }
+      
+      .leaflet-draw-tooltip {
+        font-size: 12px;
+        padding: 3px 6px;
+      }
+    }
+
+    /* Add styles for coordinates panel */
+    .coordinates-panel {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      width: 300px;
+      max-height: 400px;
+      z-index: 1000;
+      overflow: hidden;
+    }
+
+    .coordinates-header {
+      padding: 10px 15px;
+      background: #f8f9fa;
+      border-bottom: 1px solid #dee2e6;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .coordinates-header h4 {
+      margin: 0;
+      flex-grow: 1;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .coordinates-content {
+      padding: 15px;
+      overflow-y: auto;
+      max-height: 350px;
+    }
+
+    .coordinates-content pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-size: 12px;
+      font-family: monospace;
+      line-height: 1.4;
+    }
+
+    .copy-btn, .close-btn {
+      background: none;
+      border: none;
+      padding: 5px;
+      cursor: pointer;
+      color: #666;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+    }
+
+    .copy-btn:hover, .close-btn:hover {
+      color: #333;
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      .coordinates-panel {
+        width: calc(100% - 40px);
+        bottom: 10px;
+        right: 20px;
+        max-height: 200px;
+      }
+
+      .coordinates-content {
+        max-height: 150px;
+      }
+
+      .coordinates-header h4 {
+        font-size: 13px;
+      }
+
+      .coordinates-content pre {
+        font-size: 11px;
+      }
+    }
+
+    /* Add styles for zone labels */
+    .zone-label-container {
+      background: transparent;
+      border: none;
+      text-align: center;
+    }
+    .zone-label {
+      font-size: 16px;
+      font-weight: bold;
+      color: #333;
+      white-space: nowrap;
+      pointer-events: none;
+      text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.8),
+                   -2px -2px 4px rgba(255, 255, 255, 0.8),
+                   2px -2px 4px rgba(255, 255, 255, 0.8),
+                   -2px 2px 4px rgba(255, 255, 255, 0.8);
+      transition: all 0.3s ease;
+    }
+    .zone-label-hover {
+      transform: scale(1.1);
+    }
+    @media (max-width: 768px) {
+      .zone-label {
+        font-size: 12px;
+        padding: 4px 8px;
+      }
+    }
+
+    /* Add styles for marker labels */
+    .marker-container {
+      position: relative;
+    }
+    .marker-label {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 3px 6px;
+      border: 1px solid rgba(0, 0, 0, 0.2);
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: bold;
+      white-space: nowrap;
+      position: absolute;
+      bottom: 42px;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+      z-index: 1000;
+      min-width: 60px;
+      text-align: center;
+    }
+    .marker-label.small {
+      font-size: 9px;
+      padding: 2px 4px;
+      bottom: 35px;
+      min-width: 50px;
+    }
+    .marker-icon-custom {
+      width: 23px;
+      height: 41px;
+      background-size: contain;
+      background-repeat: no-repeat;
+    }
+    @media (max-width: 768px) {
+      .marker-label {
+        font-size: 8px;
+        padding: 2px 4px;
+        min-width: 40px;
+      }
+    }
+
+    /* Add styles for toggle button */
+    .search-toggle {
+      position: absolute;
+      top: -10px;
+      left: calc(35% + 300px); /* Position after the search container's right edge */
+      transform: none;
+      background: white;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      z-index: 1001;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.3s ease;
+      height: 30px;
+    }
+    .search-toggle:hover {
+      background: #f8f9fa;
+    }
+    .search-toggle i {
+      transition: transform 0.3s ease;
+      font-size: 12px;
+    }
+    .search-toggle.collapsed i {
+      transform: rotate(180deg);
+    }
+    
+    /* Update search container styles */
+    .search-container {
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 70%;
+      max-width: 600px;
+      background: white;
+      padding: 12px 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      z-index: 1000;
+      display: flex;
+      gap: 20px;
+      transition: all 0.3s ease;
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* Mobile responsive adjustments */
+    @media (max-width: 768px) {
+      .search-toggle {
+        top: 40px; /* Move below the search container on mobile */
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 4px 8px;
+        font-size: 11px;
+        height: 26px;
+      }
+      .search-toggle i {
+        font-size: 10px;
+      }
+    }
+  
