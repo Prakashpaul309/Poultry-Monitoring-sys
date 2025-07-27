@@ -3,6 +3,7 @@
 <head>
   <title>Login - Sensor Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -153,8 +154,8 @@
   </div>
 
   <script>
-   const SUPABASE_URL = CONFIG.SUPABASE_URL;
-   const SUPABASE_KEY = CONFIG.SUPABASE_ANON_KEY;
+    const SUPABASE_URL = CONFIG.SUPABASE_URL;
+    const SUPABASE_KEY = CONFIG.SUPABASE_ANON_KEY;
 
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -225,25 +226,37 @@
     }
 
     async function signIn() {
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
 
-      if (!email || !password) {
-        showMessage('Please fill in all fields', true);
-        return;
-      }
+        if (!email || !password) {
+            showMessage('Please fill in all fields', true);
+            return;
+        }
 
-      setLoading(true);
-      const { data, error } = await client.auth.signInWithPassword({ email, password });
-      setLoading(false);
-
-      if (error) {
-        showMessage(error.message, true);
-      } else {
-        showMessage('Login successful!');
-        // Show Telegram modal instead of immediate redirect
-        document.getElementById('telegramModal').style.display = 'flex';
-      }
+        // Clear any existing session first
+        await client.auth.signOut();
+        
+        setLoading(true);
+        try {
+            const { data, error } = await client.auth.signInWithPassword({ email, password });
+            
+            if (error) {
+                throw error;
+            }
+            
+            // Wait a moment to ensure session is properly established
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            showMessage('Login successful!');
+            // Show Telegram modal instead of immediate redirect
+            document.getElementById('telegramModal').style.display = 'flex';
+        } catch (error) {
+            console.error('Login error:', error);
+            showMessage(error.message || 'Login failed. Please try again.', true);
+        } finally {
+            setLoading(false);
+        }
     }
 
     function linkTelegram() {
@@ -261,6 +274,5 @@
       window.location.href = 'dashboard.html';
     }
   </script>
-  <script src="config.js"></script>
 </body>
 </html>
